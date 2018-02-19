@@ -33,10 +33,10 @@ public class BackupContacts {
         this.context = context;
     }
 
-    public Observable<Integer> saveAllContacts()
+    public int saveAllContacts()
     {
         int flag = readAllContacts();
-        return Observable.just(flag);
+        return (flag);
     }
 
     public int readAllContacts() {
