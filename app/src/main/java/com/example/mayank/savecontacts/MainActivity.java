@@ -8,18 +8,20 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 
-import rx.Observable;
-import rx.Subscriber;
-import rx.Subscription;
-import rx.android.schedulers.AndroidSchedulers;
-import rx.schedulers.Schedulers;
+import java.io.IOException;
+
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.schedulers.Schedulers;
+
+
 
 public class MainActivity extends AppCompatActivity {
 
-    Subscription subscription;
     public static final String TAG = MainActivity.class.getSimpleName();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -32,41 +34,27 @@ public class MainActivity extends AppCompatActivity {
         if ((ContextCompat.checkSelfPermission(MainActivity.this,
                 Manifest.permission.READ_CONTACTS)
                 != PackageManager.PERMISSION_GRANTED)
-            || (ContextCompat.checkSelfPermission(MainActivity.this,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED)){
+                || (ContextCompat.checkSelfPermission(MainActivity.this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)) {
             if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this,
-                    Manifest.permission.READ_CONTACTS) && ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this,Manifest.permission.WRITE_EXTERNAL_STORAGE) ) {
+                    Manifest.permission.READ_CONTACTS) && ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
             } else {
                 ActivityCompat.requestPermissions(MainActivity.this,
-                        new String[]{Manifest.permission.READ_CONTACTS,Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                        new String[]{Manifest.permission.READ_CONTACTS, Manifest.permission.WRITE_EXTERNAL_STORAGE},
                         23);
             }
         }
-        Observable<Integer> observable = Observable.create(new Observable.OnSubscribe<Integer>() {
-            @Override
-            public void call(Subscriber<? super Integer> subscriber) {
-                BackupContacts b = new BackupContacts(MainActivity.this);
-                subscriber.onNext(b.readAllContacts());
-                subscriber.onCompleted();
-            }
-        });
-        observable.subscribeOn(Schedulers.io()).observeOn(AndroidSchedulers.mainThread());
-        Subscriber<Integer> subscriber = new Subscriber<Integer>() {
-            @Override
-            public void onCompleted() {
-                Snackbar.make(view.getRootView(),"All Contacts backed up",Snackbar.LENGTH_SHORT).show();
-            }
 
-            @Override
-            public void onError(Throwable e) {
+        io.reactivex.Observable.fromCallable(() -> {
+            BackupContacts b = new BackupContacts(MainActivity.this);
+            b.saveAllContacts();
 
-            }
-
-            @Override
-            public void onNext(Integer integer) {
-
-            }
-        };
-        observable.subscribe(subscriber);
+            return false;
+        })
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe((result) -> {
+                    Snackbar.make(view.getRootView(),"All Contacts Backed Up",Snackbar.LENGTH_SHORT).show();
+                });
     }
 }
