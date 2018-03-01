@@ -1,10 +1,6 @@
 package com.example.mayank.savecontacts;
 
-import android.content.ContentResolver;
-import android.content.Context;
-import android.database.Cursor;
 import android.os.Environment;
-import android.provider.ContactsContract;
 import android.util.Log;
 
 import java.io.BufferedInputStream;
@@ -14,8 +10,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+
+import ir.mirrajabi.rxcontacts.Contact;
 
 
 /**
@@ -24,61 +23,32 @@ import java.util.zip.ZipOutputStream;
 
 public class BackupContacts {
     public static final String filenameCSV = "ContactsBackUp.csv";
-    public  Context context;
-    public static BackupContacts instance;
 
-    public BackupContacts(Context context)
+    public static int saveTOCSV(List<Contact> contacts)
     {
-        this.context = context;
-    }
-
-    public int saveAllContacts()
-    {
-        int flag = readAllContacts();
-        return (flag);
-    }
-
-    public int readAllContacts() {
-        ContentResolver cr = context.getContentResolver();
-        Cursor cursor = cr.query(ContactsContract.Contacts.CONTENT_URI,
-                null, null, null, null);
-        Log.v("AllContacts", cursor.getCount() + " Coulumn : " + cursor.getColumnCount());
-        return saveTOCSV(cursor);
-    }
-    public int saveTOCSV(Cursor c) {
         int flag = 0;
         try {
             int rowcount = 0;
-            int colcount = 0;
             File sdCardDir = Environment.getExternalStorageDirectory();
             File saveFile = new File(sdCardDir, filenameCSV);
             FileWriter fw = new FileWriter(saveFile);
             BufferedWriter bw = new BufferedWriter(fw);
-            rowcount = c.getCount();
-            colcount = c.getColumnCount();
+            rowcount = contacts.size();
             if (rowcount > 0) {
-                c.moveToFirst();
-                for (int i = 0; i < colcount; i++) {
-                    if (i != colcount - 1) {
-                        bw.write(c.getColumnName(i) + ",");
-                    } else {
-                        bw.write(c.getColumnName(i));
-                    }
-                }
+                bw.write("Name,");
+                bw.write("Phone Number,");
             }
             bw.newLine();
             for (int i = 0; i < rowcount; i++) {
-                c.moveToPosition(i);
-                for (int j = 0; j < colcount; j++) {
-                    if (j != colcount - 1)
-                        bw.write(c.getString(j) + ",");
-                    else
-                        bw.write(c.getString(j));
-                }
+                bw.write(contacts.get(i).getDisplayName() + ",");
+                String str = contacts.get(i).getPhoneNumbers().toString();
+                str = str.replace('[',' ');
+                str = str.replace(']',' ');
+                str = str.replace(',',':');
+                bw.write(str + ",");
                 bw.newLine();
             }
             bw.flush();
-
             zip(new String[]{sdCardDir + "/"+  filenameCSV},sdCardDir + "/contacts.zip");
             saveFile.delete();
         } catch (Exception ex) {
@@ -87,9 +57,10 @@ public class BackupContacts {
         }finally {
             return flag;
         }
+
     }
 
-    public void zip(String[] _files, String zipFileName) {
+    public static void zip(String[] _files, String zipFileName) {
         try {
             BufferedInputStream origin = null;
             FileOutputStream dest = new FileOutputStream(zipFileName);

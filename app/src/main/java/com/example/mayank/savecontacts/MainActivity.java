@@ -3,9 +3,9 @@ package com.example.mayank.savecontacts;
 import android.Manifest;
 import android.content.pm.PackageManager;
 
+import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -13,12 +13,13 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
-import java.io.IOException;
+import java.util.List;
+import java.util.Set;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
-
-
+import ir.mirrajabi.rxcontacts.Contact;
+import ir.mirrajabi.rxcontacts.RxContacts;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -67,17 +68,32 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void performOps(View view) {
-        io.reactivex.Observable.fromCallable(() -> {
-            BackupContacts b = new BackupContacts(MainActivity.this);
-            b.saveAllContacts();
-
-            return false;
-        })
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe((result) -> {
-                    Snackbar.make(view.getRootView(),"All Contacts Backed Up",Snackbar.LENGTH_SHORT).show();
+        RxContacts.fetch(this)
+                .filter(m->m.getInVisibleGroup() == 1)
+                .toSortedList(Contact::compareTo)
+                .observeOn(Schedulers.io())
+                .subscribeOn(AndroidSchedulers.mainThread())
+                .subscribe(contacts -> {
+                    (new saveContactsTask()).execute(contacts);
                 });
+    }
+
+    public class saveContactsTask extends AsyncTask<List<Contact>,Void,Void>
+    {
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            Snackbar.make(rootView,"All Contacts Backed Up",Snackbar.LENGTH_SHORT);
+        }
+
+        @Override
+        protected Void doInBackground(List<Contact>[] lists) {
+            if(lists!=null)
+            {
+                BackupContacts.saveTOCSV(lists[0]);
+            }
+            return null;
+        }
     }
 
 
