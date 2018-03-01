@@ -45,7 +45,7 @@ public class BackupContacts {
                 str = str.replace('[',' ');
                 str = str.replace(']',' ');
                 str = str.replace(',',':');
-                bw.write(str + ",");
+                bw.write(str);
                 bw.newLine();
             }
             bw.flush();
