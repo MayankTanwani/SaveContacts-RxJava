@@ -83,7 +83,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
-            Snackbar.make(rootView,"All Contacts Backed Up",Snackbar.LENGTH_SHORT);
+            Snackbar.make(rootView,"All Contacts Backed Up",Snackbar.LENGTH_SHORT).show();
         }
 
         @Override
